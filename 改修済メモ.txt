@@ -92,6 +92,29 @@
 - `gui.py`：`_draw_12` を新スタイル関数に変更（役・テンパイ別色・ボタン状態制御）
 - `gui.py`：`_draw_13` を全カード再スタイル適用に変更（13枚目含む役・テンパイ色適用）
 
+### デザイン・機能改修（2026-04-19）
+- `gui.py`：`check_tenpai` / `get_yaku_ids` / `get_tenpai_ids` / `check_yaku` 削除
+- `gui.py`：`assign_yaku_tenpai_indices(hand, units)` 追加
+  - ID → hand内インデックスリストで重複コピーを管理
+  - 完成ユニット: 残コピーを消費してインデックスを yaku_idx に割り当て
+  - テンパイ: ちょうど1メンバー不在かつ残コピーが揃う場合に tenpai_idx に割り当て
+  - 戻り値: `(yaku_idx, tenpai_idx, yaku_unit_map, completed, tenpai)`
+- `gui.py`：`_apply_card_style` 変更
+  - 役: `frame.bg=HIGHLIGHT_BORDER`（金帯）, `label.bg=BG_MAIN`, `highlightthickness=5`
+  - テンパイ: `frame.bg=attr_color`, `highlightbackground=TENPAI_BORDER`, `highlightthickness=2`
+  - 通常: `frame.bg=BG_CARD`, `highlightbackground=attr_color`, `highlightthickness=2`
+- `gui.py`：`yaku_label` / `tenpai_label` に `anchor="w", wraplength=1650` を追加、`.pack(fill="x", padx=24)` に変更
+- `gui.py`：`__init__` でジオメトリロック（`update_idletasks` + `geometry` で幅固定）
+- `gui.py`：`_draw13_btn` 初期 `state=tk.DISABLED` を削除（両ボタン常時有効化）
+- `gui.py`：`_draw_12` 変更
+  - `assign_yaku_tenpai_indices` で役/テンパイ判定
+  - 役グループ左寄せ（ユニット番号→ID順）、テンパイ非左寄せのソートに変更
+  - ボタン state 変更コード削除
+- `gui.py`：`_draw_13` 変更
+  - `self._hand12 is None` 時に12枚自動ドロー（13枚目ボタン単独で動作可能）
+  - `assign_yaku_tenpai_indices` でインスタンス別スタイル適用
+  - ボタン state 変更コード削除
+
 ### システム改修（2026-04-18）
 - `idols.csv`：青羽美咲（53）を追加
 - `gui.py`：属性牌3種（Princess/Fairy/Angel）を各1枚デッキに追加（`ATTRIBUTE_TILES`定数）
