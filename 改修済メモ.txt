@@ -1,0 +1,36 @@
+# 改修済メモ
+
+### コードレビュー対応（2026-04-18）
+- `gui.py`：`FONT_FAMILY = "Meiryo UI"` 定数を追加、全フォント指定を定数参照に変更
+- `gui.py`：`CardWidget` dataclass を追加（`frame: tk.Frame`, `label: tk.Label`）
+- `gui.py`：`self.cards` を `list[CardWidget]` に変更
+- `gui.py`：`draw_hand` のシグネチャを `draw_hand(deck, n=13)` に変更（デッキをキャッシュ）
+- `gui.py`：`App.__init__` で `self._deck = idols * 3 + ATTRIBUTE_TILES` をキャッシュ
+- `gui.py`：`draw_hand` にデッキ枚数不足チェック（`ValueError`）を追加
+- `gui.py`：`load_idols` に CSV 未検出チェック（`FileNotFoundError`）を追加
+- `gui.py`：`load_idols` の `int()` 変換を `try/except ValueError` で保護
+- `gui.py`：`_draw` の `enumerate` + インデックス参照を `zip` に変更
+- `gui.py`：属性牌コメントを `# 属性牌 3種 × 各1枚 = 3枚` に修正
+
+### デザイン改修（2026-04-18）
+- `gui.py`：フォント全箇所を `Yu Gothic UI` → `Meiryo UI` に変更
+- `gui.py`：カードレイアウトを7列×2行 → 1行13列に変更
+- `gui.py`：カードサイズを縦長に変更（78×80 → 56×100px）
+- `gui.py`：番号表示ラベル削除
+- `gui.py`：名前表示を表示名（名前のみ）に変更 → `idol[2]` を使用
+- `idols.csv`：3列目（表示名＝名前のみ）を全52行に追加
+
+### システム改修（2026-04-18）
+- `idols.csv`：青羽美咲（53）を追加
+- `gui.py`：属性牌3種（Princess/Fairy/Angel）を各1枚デッキに追加（`ATTRIBUTE_TILES`定数）
+- `gui.py`：`draw_hand` でアイドル牌159枚+属性牌3枚の合計162枚デッキに変更
+- `gui.py`：説明文を「53種×3枚+属性牌3枚のデッキから13枚ドロー」に更新
+
+### 実装内容（2026-04-18）
+- `gui.py`：tkinter製GUIアプリ本体
+  - ミリオンライブ52アイドル × 3枚 = 156枚デッキ
+  - ドローボタンで13枚をランダム抽出・番号順ソートで表示
+  - カード表示：7列×2行レイアウト（78×80px）
+  - ダークテーマ（#1a1a2e背景 / #e94560アクセント）
+- `idols.csv`：アイドル52名の番号・名前データ
+- `改修予定メモ.txt`：未着手/完了セクションのみ（空）
