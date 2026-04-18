@@ -20,6 +20,60 @@
 - `gui.py`：名前表示を表示名（名前のみ）に変更 → `idol[2]` を使用
 - `idols.csv`：3列目（表示名＝名前のみ）を全52行に追加
 
+### 機能追加（2026-04-18）②
+- `gui.py`：`HIGHLIGHT_BORDER = "#ffd700"` 定数追加
+- `gui.py`：`check_tenpai(hand, units)` 追加（1枚欠けユニットを返す）
+- `gui.py`：`get_contributing_ids(hand, units)` 追加（完成・テンパイユニットの関与IDセットを返す）
+- `gui.py`：`App.__init__` に `self._hand12`, `self._id_to_name` 追加
+- `gui.py`：`_build_ui` に `self.tenpai_label` 追加、ボタンを `self._draw_btn` として保持
+- `gui.py`：`_draw` をフェーズディスパッチャーに変更
+- `gui.py`：`_draw_12` 追加
+  - デッキから12枚ドロー
+  - 役構成アイドルを金枠（`HIGHLIGHT_BORDER`、`highlightthickness=4`）・左寄せ表示
+  - 役とテンパイを別ラベルに表示
+  - ボタンを「13枚目を引く」に変更
+- `gui.py`：`_draw_13` 追加
+  - 残りデッキから1枚ドロー
+  - 13枚目スロットに表示
+  - 12枚完成役 / 13枚目で完成した役を区別してラベル表示
+  - 13枚手牌でのテンパイ役を「惜しい:」ラベルで表示
+  - ボタンを「ドロー」に戻す
+
+### デザイン改修（2026-04-18）④
+- `gui.py`：カードサイズを56×100 → 112×200px（2倍）に変更
+- `gui.py`：フォントをスケールアップ（カード内:8→14、タイトル:18→28、サブタイトル:9→14、ボタン:13→20）
+- `gui.py`：`wraplength` を50→100に変更
+- `gui.py`：カード間`padx`を3→5に変更
+- `gui.py`：13枚目のカードをcolumn 13に配置し、column 12に1枚分の隙間を確保（`columnconfigure minsize=122`）
+
+### 機能追加（2026-04-18）
+- `units.csv`：ユニット定義CSV新規作成（書式: `ユニット名,ID1,ID2,...`）
+  - 765プロオールスターズ（ID:1-13）を初期定義として記載
+- `gui.py`：`UNITS_PATH` 定数を追加
+- `gui.py`：`load_units()` 関数を追加（units.csv読み込み、`{ユニット名: frozenset(ID)}`返却）
+- `gui.py`：`check_yaku(hand, units)` 関数を追加（成立ユニット名リスト返却）
+- `gui.py`：`App.__init__` で `self._units = load_units()` をキャッシュ
+- `gui.py`：`_build_ui` に `self.yaku_label` を追加（ドロー後の役表示エリア）
+- `gui.py`：`_draw` で `check_yaku` を呼び出し、役ラベルを更新
+
+### デザイン改修（2026-04-18）③
+- `gui.py`：青羽美咲（ID:53）の枠を緑色 `#4caf50` に設定（`SPECIAL_BORDER` 定数）
+- `gui.py`：全アイドルの属性枠色対応
+  - `ATTR_BORDER`（ID→色）廃止 → `ATTR_COLORS`（属性名→色）+ `SPECIAL_BORDER`（ID→色）に分離
+  - `ATTRIBUTE_TILES` を3タプル → 4タプル（属性フィールド追加）
+  - `load_idols` を4タプル読み込みに変更（4列目なければ空文字）
+  - `_draw` を `SPECIAL_BORDER.get(id) or ATTR_COLORS.get(attribute)` ロジックに変更
+- `idols.csv`：4列目（属性）を追加（現在空欄、ユーザーが記入予定）
+
+### デザイン改修（2026-04-18）②
+- `gui.py`：属性牌の枠色を属性ごとに変更
+  - Princess（101）→ ピンク `#ff69b4`
+  - Fairy（102）→ 青 `#64b5f6`
+  - Angel（103）→ 黄 `#ffd54f`
+  - `ATTR_BORDER` 定数（ID→色マップ）を追加
+  - フレームを `relief="groove", bd=2` → `highlightbackground, highlightthickness=2, relief="flat"` に変更
+  - `_draw` でIDに応じた `highlightbackground` を適用
+
 ### システム改修（2026-04-18）
 - `idols.csv`：青羽美咲（53）を追加
 - `gui.py`：属性牌3種（Princess/Fairy/Angel）を各1枚デッキに追加（`ATTRIBUTE_TILES`定数）
