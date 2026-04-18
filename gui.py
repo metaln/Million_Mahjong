@@ -18,6 +18,7 @@ BTN_BG = "#e94560"
 BTN_ACTIVE = "#c73652"
 FONT_FAMILY      = "Meiryo UI"
 HIGHLIGHT_BORDER = "#ffd700"   # 役構成アイドルの枠色（金）
+TENPAI_BORDER    = "#ffa500"   # テンパイ時の枠色（オレンジ）
 
 # 属性名→枠色（アイドル牌・属性牌共通）
 ATTR_COLORS = {
@@ -99,12 +100,22 @@ def check_tenpai(hand, units):
     }
 
 
-def get_contributing_ids(hand, units):
-    """完成またはテンパイのユニットに属するIDセットを返す"""
+def get_yaku_ids(hand, units):
+    """完成ユニットに属するIDセットを返す"""
     hand_ids = {tile[0] for tile in hand}
     result = set()
     for members in units.values():
-        if len(members - hand_ids) <= 1:
+        if members <= hand_ids:
+            result |= members
+    return result
+
+
+def get_tenpai_ids(hand, units):
+    """テンパイ（1枚欠け）ユニットに属するIDセットを返す"""
+    hand_ids = {tile[0] for tile in hand}
+    result = set()
+    for members in units.values():
+        if len(members - hand_ids) == 1:
             result |= (members & hand_ids)
     return result
 
@@ -188,8 +199,8 @@ class App(tk.Tk):
 
             label = tk.Label(frame, text="", font=(FONT_FAMILY, 14),
                              bg=BG_CARD_EMPTY, fg=FG_NAME, wraplength=100)
-            # expand=True: 親フレーム内で中央配置
-            label.pack(expand=True)
+            # expand=True: 親フレーム内で中央配置。padx/pady で frame.bg が帯として見える
+            label.pack(expand=True, padx=4, pady=4)
 
             self.cards.append(CardWidget(frame=frame, label=label))
 
@@ -214,10 +225,10 @@ class App(tk.Tk):
         )
         self.tenpai_label.pack(pady=(2, 0))
 
-        # command=self._draw: ボタン押下で _draw を呼ぶ
-        self._draw_btn = tk.Button(
-            self,
-            text="  ドロー  ",
+        _btn_frame = tk.Frame(self, bg=BG_MAIN)
+        _btn_frame.pack(pady=(16, 24))
+
+        _btn_opts = dict(
             font=(FONT_FAMILY, 20, "bold"),
             bg=BTN_BG,
             fg="white",
@@ -227,33 +238,50 @@ class App(tk.Tk):
             padx=24,
             pady=8,
             cursor="hand2",
-            command=self._draw,
         )
-        self._draw_btn.pack(pady=(16, 24))
+        self._draw12_btn = tk.Button(
+            _btn_frame, text="  ドロー  ", command=self._draw_12, **_btn_opts
+        )
+        self._draw12_btn.pack(side=tk.LEFT, padx=8)
 
-    def _draw(self):
-        """ドローボタン押下: フェーズに応じて12枚 or 13枚目を引く"""
-        if self._hand12 is None:
-            self._draw_12()
+        self._draw13_btn = tk.Button(
+            _btn_frame, text="  13枚目を引く  ", command=self._draw_13,
+            state=tk.DISABLED, **_btn_opts
+        )
+        self._draw13_btn.pack(side=tk.LEFT, padx=8)
+
+    def _apply_card_style(self, card, tile_id, attribute, is_yaku=False, is_tenpai=False):
+        """カード枠スタイルを適用（役・テンパイ・属性色を階層表示）"""
+        attr_color = SPECIAL_BORDER.get(tile_id) or ATTR_COLORS.get(attribute, BG_CARD)
+        if is_yaku:
+            card.frame.configure(bg=attr_color, highlightbackground=HIGHLIGHT_BORDER, highlightthickness=3)
+            card.label.configure(bg=BG_CARD)
+        elif is_tenpai:
+            card.frame.configure(bg=attr_color, highlightbackground=TENPAI_BORDER, highlightthickness=3)
+            card.label.configure(bg=BG_CARD)
         else:
-            self._draw_13()
+            card.frame.configure(bg=BG_CARD, highlightbackground=attr_color, highlightthickness=2)
+            card.label.configure(bg=BG_CARD)
 
     def _draw_12(self):
-        """デッキから12枚ドロー。役構成アイドルを金枠・左寄せで表示"""
+        """デッキから12枚ドロー。役・テンパイ・属性を枠色で表示"""
         hand12 = random.sample(self._deck, 12)
-        contributing = get_contributing_ids(hand12, self._units)
-        # 役構成を左に、それぞれID順ソート
-        hand12.sort(key=lambda x: (0 if x[0] in contributing else 1, x[0]))
+        yaku_ids = get_yaku_ids(hand12, self._units)
+        tenpai_ids = get_tenpai_ids(hand12, self._units)
+        # 役→テンパイ→その他の順にソート
+        hand12.sort(key=lambda x: (
+            0 if x[0] in yaku_ids else
+            1 if x[0] in tenpai_ids else
+            2,
+            x[0]
+        ))
         self._hand12 = hand12
 
         for card, (tile_id, _, display_name, attribute) in zip(self.cards[:12], hand12):
-            border = SPECIAL_BORDER.get(tile_id) or ATTR_COLORS.get(attribute, BG_CARD)
-            if tile_id in contributing:
-                hbg, ht = HIGHLIGHT_BORDER, 4
-            else:
-                hbg, ht = border, 2
-            card.frame.configure(bg=BG_CARD, highlightbackground=hbg, highlightthickness=ht)
-            card.label.configure(text=display_name, bg=BG_CARD)
+            card.label.configure(text=display_name)
+            self._apply_card_style(card, tile_id, attribute,
+                                   is_yaku=tile_id in yaku_ids,
+                                   is_tenpai=tile_id in tenpai_ids)
 
         # 13枚目スロットをクリア
         c13 = self.cards[12]
@@ -274,23 +302,35 @@ class App(tk.Tk):
             text="テンパイ: " + " / ".join(tenpai_texts) if tenpai_texts else "テンパイ: なし",
             fg="#ffa500" if tenpai_texts else "#8888aa",
         )
-        self._draw_btn.configure(text="  13枚目を引く  ")
+        self._draw12_btn.configure(state=tk.DISABLED)
+        self._draw13_btn.configure(state=tk.NORMAL)
 
     def _draw_13(self):
-        """残りデッキから1枚ドロー。役の完成状況を区別して表示"""
+        """残りデッキから1枚ドロー。役・テンパイ・属性を枠色で表示"""
         remaining = list(self._deck)
         for tile in self._hand12:
             remaining.remove(tile)
         card13 = random.choice(remaining)
 
+        full     = self._hand12 + [card13]
+        yaku_ids   = get_yaku_ids(full, self._units)
+        tenpai_ids = get_tenpai_ids(full, self._units)
+
+        # 12枚を再スタイル適用（役成立でステータスが変わる場合に対応）
+        for card, (tile_id, _, display_name, attribute) in zip(self.cards[:12], self._hand12):
+            self._apply_card_style(card, tile_id, attribute,
+                                   is_yaku=tile_id in yaku_ids,
+                                   is_tenpai=tile_id in tenpai_ids)
+
+        # 13枚目スタイル適用
         tile_id, _, display_name, attribute = card13
-        border = SPECIAL_BORDER.get(tile_id) or ATTR_COLORS.get(attribute, BG_CARD)
         c13 = self.cards[12]
-        c13.frame.configure(bg=BG_CARD, highlightbackground=border, highlightthickness=2)
-        c13.label.configure(text=display_name, bg=BG_CARD)
+        c13.label.configure(text=display_name)
+        self._apply_card_style(c13, tile_id, attribute,
+                               is_yaku=tile_id in yaku_ids,
+                               is_tenpai=tile_id in tenpai_ids)
 
         yaku_12  = check_yaku(self._hand12, self._units)
-        full     = self._hand12 + [card13]
         yaku_all = check_yaku(full, self._units)
         by_13    = [y for y in yaku_all if y not in yaku_12]
         tenpai   = check_tenpai(full, self._units)
@@ -311,7 +351,8 @@ class App(tk.Tk):
             fg="#ffa500" if tenpai_texts else "#8888aa",
         )
         self._hand12 = None
-        self._draw_btn.configure(text="  ドロー  ")
+        self._draw12_btn.configure(state=tk.NORMAL)
+        self._draw13_btn.configure(state=tk.DISABLED)
 
 
 # __name__ == "__main__": 直接実行時のみ True

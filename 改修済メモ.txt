@@ -74,6 +74,24 @@
   - フレームを `relief="groove", bd=2` → `highlightbackground, highlightthickness=2, relief="flat"` に変更
   - `_draw` でIDに応じた `highlightbackground` を適用
 
+### デザイン改修（2026-04-18）⑤
+- `gui.py`：`TENPAI_BORDER = "#ffa500"` 定数追加
+- `gui.py`：`get_contributing_ids` 削除 → `get_yaku_ids` / `get_tenpai_ids` に分割
+  - `get_yaku_ids`：完成ユニット (`members <= hand_ids`) のIDセット返却
+  - `get_tenpai_ids`：テンパイ（1枚欠け）ユニットの関与IDセット返却
+- `gui.py`：`_apply_card_style(card, tile_id, attribute, is_yaku, is_tenpai)` メソッド追加
+  - 役: 外枠=金、帯=属性色、内容=BG_CARD（thickness=3）
+  - テンパイ: 外枠=オレンジ、帯=属性色、内容=BG_CARD（thickness=3）
+  - その他: 外枠=属性色、内容=BG_CARD（thickness=2）
+- `gui.py`：`label.pack(expand=True)` → `label.pack(expand=True, padx=4, pady=4)` に変更（帯表示のため）
+- `gui.py`：`_draw_btn`（1ボタン）廃止 → `_draw12_btn` + `_draw13_btn` の2ボタン横並びに変更
+  - 初期: ドローボタンのみ有効
+  - ドロー後: ドロー無効・13枚目有効に切り替え
+  - 13枚目引き後: ドロー有効・13枚目無効に戻す
+- `gui.py`：`_draw` メソッド削除（2ボタン直接バインドに変更）
+- `gui.py`：`_draw_12` を新スタイル関数に変更（役・テンパイ別色・ボタン状態制御）
+- `gui.py`：`_draw_13` を全カード再スタイル適用に変更（13枚目含む役・テンパイ色適用）
+
 ### システム改修（2026-04-18）
 - `idols.csv`：青羽美咲（53）を追加
 - `gui.py`：属性牌3種（Princess/Fairy/Angel）を各1枚デッキに追加（`ATTRIBUTE_TILES`定数）
